@@ -24,7 +24,7 @@ def main():
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "pytest", "-c", str(ROOT / "pytest.ini"),
-                 "--confcutdir", str(ROOT / "tests"), str(ROOT / "tests/test_acceptance.py"),
+                 "-o", "pythonpath=", "--confcutdir", str(ROOT / "tests"), str(ROOT / "tests/test_acceptance.py"),
                  "--junitxml", str(report)],
                 cwd=submission, env=env, text=True, capture_output=True, timeout=120,
             )

@@ -1,5 +1,6 @@
 """Twenty independent checks worth five points each; the README defines the API."""
 import inspect
+import os
 import math
 import subprocess
 import sys
@@ -27,6 +28,7 @@ def test_manual_numeric_text():
 def test_shared_calculation():
     from calculator.statistics import standard_deviation
     assert standard_deviation([10, 20, 30, 40, 50]) == pytest.approx(EXPECTED)
+    assert standard_deviation([2, 4, 6]) == pytest.approx(2.0)
 
 # CSV input: 20 points.
 def test_csv_known_values(tmp_path):
@@ -164,8 +166,12 @@ def test_invalid_csv(tmp_path):
         CsvStdDevCommand(tmp_path / "absent.csv").execute()
 
 
-def test_cli_session():
-    result = subprocess.run([sys.executable, "-m", "calculator"], input="manual\n10 20 30 40 50\ncsv\nexit\n", text=True, capture_output=True, timeout=10)
+def test_cli_session(tmp_path):
+    import calculator
+    (tmp_path / "values.csv").write_text("value\n10\n20\n30\n40\n50\n")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(calculator.__file__).resolve().parents[1])
+    result = subprocess.run([sys.executable, "-m", "calculator"], input="manual\n10 20 30 40 50\ncsv\nexit\n", text=True, capture_output=True, timeout=10, cwd=tmp_path, env=env)
     assert result.returncode == 0, result.stderr
     assert result.stdout.count("Standard deviation: 15.8114") == 2
     assert "Goodbye!" in result.stdout
