@@ -177,9 +177,20 @@ def test_cli_session(tmp_path):
     assert "Goodbye!" in result.stdout
 
 
-def test_cli_recovers_and_eof():
-    result = subprocess.run([sys.executable, "-m", "calculator"], input="unknown\nmanual\nnot numbers\nmanual\n10 20 30 40 50\n", text=True, capture_output=True, timeout=10)
+def test_cli_recovers_and_eof(tmp_path, monkeypatch, capsys):
+    import calculator
+    from calculator.cli import run
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(calculator.__file__).resolve().parents[1])
+    result = subprocess.run([sys.executable, "-m", "calculator"], input="csv\nunknown\nmanual\nnot numbers\nmanual\n10 20 30 40 50\n", text=True, capture_output=True, timeout=10, cwd=tmp_path, env=env)
     assert result.returncode == 0, result.stderr
-    assert result.stdout.count("Error:") >= 2
+    assert result.stdout.count("Error:") >= 3
     assert "Standard deviation: 15.8114" in result.stdout
     assert "Goodbye!" in result.stdout
+
+    # Ctrl+C at any prompt must also end cleanly.
+    def interrupt(prompt):
+        raise KeyboardInterrupt()
+    monkeypatch.setattr("builtins.input", interrupt)
+    run()
+    assert "Goodbye!" in capsys.readouterr().out

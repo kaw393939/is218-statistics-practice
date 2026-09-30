@@ -74,7 +74,7 @@ python -m pytest
 python grading/grade.py
 ```
 
-Twenty named acceptance checks are worth five points each. The grader creates grade-results.json and grade-summary.md and exits with code 1 below 100 points. A failing grade is normal while you work. Add your tests in a separate test file; do not edit the supplied acceptance tests, rubric, grading script, or workflow.
+Twenty named acceptance checks are worth five points each. The grader creates grade-results.json and grade-summary.md and exits with code 1 below 100 points. A failing grade is normal while you work. The untouched starter scores 5/100 because its abstract Command interface is supplied; the remaining 95 points require implementation. Add your tests in a separate test file; do not edit the supplied acceptance tests, rubric, grading script, or workflow.
 
 | Category | Points |
 | --- | ---: |
@@ -99,7 +99,7 @@ Submit your fork URL and final commit SHA through the course's normal submission
 
 ## Reference policy
 
-Work individually. Course notes and your own practice code are allowed; AI assistance and communication with others during the timed attempt are prohibited. The instructor may revise this policy before release. Do not copy another student's implementation.
+Work individually. Course notes and your own practice code are allowed; AI assistance and communication with others during the timed attempt are prohibited. This is the proposed default resource policy; the instructor must confirm or revise it before the timed attempt. Do not copy another student's implementation.
 
 ## After your practice attempt
 
