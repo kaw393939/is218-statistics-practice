@@ -1,1 +1,1 @@
-"""Complete the statistics calculator."""
+"""Statistics calculator teaching package."""
