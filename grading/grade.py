@@ -1,4 +1,4 @@
-"""Run the fixed rubric and publish feedback even when a starter fails."""
+"""Publish the 60-point automated portion; manual review supplies 40 points."""
 import json
 import os
 from pathlib import Path
@@ -9,10 +9,10 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 RUBRIC = json.loads((ROOT / "grading/rubric.json").read_text())
+MAXIMUM = sum(5 * len(category["tests"]) for category in RUBRIC)
 
 
 def main():
-    # Optional submission directory is used by the instructor-owned grader.
     submission = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT
     env = os.environ.copy()
     env["PYTHONPATH"] = str(submission)
@@ -24,8 +24,8 @@ def main():
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "pytest", "-c", str(ROOT / "pytest.ini"),
-                 "-o", "pythonpath=", "--confcutdir", str(ROOT / "tests"), str(ROOT / "tests/test_acceptance.py"),
-                 "--junitxml", str(report)],
+                 "-o", "pythonpath=", "--confcutdir", str(ROOT / "tests"),
+                 str(ROOT / "tests/test_acceptance.py"), "--junitxml", str(report)],
                 cwd=submission, env=env, text=True, capture_output=True, timeout=120,
             )
             print(result.stdout)
@@ -36,26 +36,34 @@ def main():
                         case.find(tag) is not None for tag in ("failure", "error", "skipped")
                     )
             else:
-                diagnostic = f"Test run could not complete normally (exit {result.returncode}); unverified checks receive zero."
+                diagnostic = f"Test run could not complete (exit {result.returncode}); unverified checks receive zero."
         except subprocess.TimeoutExpired:
             diagnostic = "Test run exceeded 120 seconds; unverified checks receive zero."
     total = 0
-    lines = ["# Calculator feedback", "", "| Category | Score |", "| --- | ---: |"]
+    lines = ["# Practice automated feedback", "", "| Category | Score |", "| --- | ---: |"]
     checks = []
     for category in RUBRIC:
+        maximum = 5 * len(category["tests"])
         score = sum(5 for name in category["tests"] if outcomes.get(name, False))
         total += score
-        lines.append(f"| {category['category']} | {score}/20 |")
-        checks.extend({"test": name, "passed": outcomes.get(name, False), "points": 5 if outcomes.get(name, False) else 0} for name in category["tests"])
-    lines.extend(["", f"**Automated feedback score: {total}/100**", "", "Instructor review confirms the design and submission integrity.", "", diagnostic])
+        lines.append(f"| {category['category']} | {score}/{maximum} |")
+        checks.extend({"test": name, "passed": outcomes.get(name, False),
+                       "points": 5 if outcomes.get(name, False) else 0}
+                      for name in category["tests"])
+    lines.extend(["", f"**Automated feedback score: {total}/{MAXIMUM}**", "",
+                  "Student tests and request/design explanations require separate instructor review (40 points).",
+                  "Passing automated checks does not award the manual portion or establish submission integrity.",
+                  "", diagnostic])
     summary = "\n".join(lines) + "\n"
-    Path("grade-results.json").write_text(json.dumps({"score": total, "maximum": 100, "checks": checks, "diagnostic": diagnostic}, indent=2))
+    Path("grade-results.json").write_text(json.dumps(
+        {"score": total, "maximum": MAXIMUM, "manual_maximum": 40,
+         "assessment_maximum": 100, "checks": checks, "diagnostic": diagnostic}, indent=2))
     Path("grade-summary.md").write_text(summary)
     print(summary)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as output:
             output.write(summary)
-    return 0 if total == 100 else 1
+    return 0 if total == MAXIMUM else 1
 
 
 if __name__ == "__main__":

@@ -1,106 +1,121 @@
-# Practice test: Command, Simple Factory, and pandas
+# Practice: adapt a measurement-calibration calculator
 
-This is a full 90-minute practice test. The real test will not be exactly the same: expect a small change to the statistic or requirements. The setup, architecture, and workflow will be familiar. Understand your code so you can adapt it.
+This is a **90-minute, open-notes and open-code practice assessment** following the six-part [teaching course](https://github.com/kaw393939/is218-command-factory-statistics). You already built an OOP calculator. Here you receive working infrastructure and adapt it to new requirements; rebuilding the textbook application is not the task.
 
-**Time limit: 90 minutes.** Start timing after reading the instructions; setup is part of the attempt. Infrastructure is supplied so you can focus on implementation. Before the exam, verify Python and GitHub access. Complete TODOs in calculator/, keep the documented API, and add your own meaningful tests. The starter is intentionally incomplete and its initial grading run is expected to fail.
+A laboratory needs to adjust a reading using named calibration settings, calculate the spread of several readings, and recall its last successful calculation. A known history defect must also be repaired. The formulas are supplied; no laboratory or statistical knowledge is assumed.
 
+## Before the timer
 
-## Set up your workspace
-
-Use Python 3.11–3.14. Fork the repository on GitHub, then clone **your fork** and change into its folder. Replace YOUR-USERNAME and REPOSITORY below.
+Read this page and verify your Python/GitHub environment. Use Python 3.11–3.14. Fork this repository and clone your fork. Environment installation is preparation rather than assessed work.
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/REPOSITORY.git
-cd REPOSITORY
+git clone https://github.com/YOUR-USERNAME/is218-statistics-practice.git
+cd is218-statistics-practice
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-```
-
-On Windows PowerShell use `py -m venv .venv` and `.venv\Scripts\Activate.ps1` instead. If activation is restricted, use `.venv\Scripts\python.exe -m pip install -r requirements.txt` and that interpreter for the commands below. On macOS/Linux you can likewise use `.venv/bin/python` without activation.
-
-```bash
-python -m calculator
-python -m pytest
-```
-
-Run from the repository root: `csv` reads `values.csv` in the current working directory. Use `deactivate` when finished. Do not commit `.venv`.
-
-
-## What to build
-
-An interactive calculator with exactly these commands:
-
-| Command | Behavior |
-| --- | --- |
-| manual | Prompt for whitespace-separated numbers and calculate sample standard deviation |
-| csv | Read the supplied values.csv automatically; use its value column |
-| exit | Print Goodbye! and end the session |
-
-No filename or column selection is required. No history, removal, GUI, undo, Facade, or extra arithmetic is required.
-
-Use pandas for CSV reading and calculation. **Use sample standard deviation, explicitly ddof=1.** Both sources use one shared calculation function. Require at least two finite numeric values, including for this exam's population calculation. Reject nonnumeric values, missing cells, NaN, infinity, and nonfinite results. Blank CSV lines ignored by read_csv do not count as observations; an empty quoted cell is a missing value and must be rejected. Missing files, malformed/empty CSVs, missing value columns, and unknown commands produce a clear Error: message and return to the prompt. EOF and Ctrl+C end cleanly.
-
-The supplied CSV contains 10, 20, 30, 40, 50. Its sample standard deviation displays 15.8114. Do not hardcode data or expected answers. Tests also use other values.
-
-## Required API and responsibilities
-
-| File | Contract |
-| --- | --- |
-| calculator/statistics.py | standard_deviation(values) -> float; raise ValueError for invalid values |
-| calculator/commands.py | Abstract Command with execute(); concrete ManualStdDevCommand(values) and CsvStdDevCommand(path="values.csv") |
-| calculator/factory.py | CommandFactory.create(name, values=None) -> Command; normalize whitespace/case; reject unknown names or absent manual values with ValueError |
-| calculator/cli.py | run() implements the loop using CommandFactory.create and command.execute() |
-| calculator/__main__.py | Supplied entry point for python -m calculator |
-
-Commands must import `standard_deviation` from calculator.statistics under that name and call it. They must not prompt for input. CsvStdDevCommand.execute() must use pandas.read_csv; its optional path supports testing, while the CLI always uses the default. The factory constructs and returns objects without executing them. The CLI invokes execute() and formats results to four decimal places.
-
-## Example manual session
-
-```text
-> manual
-Enter values separated by spaces: 10 20 30 40 50
-Standard deviation: 15.8114
-> exit
-Goodbye!
-```
-
-Prompts can include a greeting; retain the result prefix Standard deviation:, error prefix Error:, and Goodbye! output. On invalid input, keep accepting commands.
-
-## Run the grading feedback
-
-```bash
 python -m pytest
 python grading/grade.py
 ```
 
-Twenty named acceptance checks are worth five points each. The grader creates grade-results.json and grade-summary.md and exits with code 1 below 100 points. A failing grade is normal while you work. The untouched starter scores 5/100 because its abstract Command interface is supplied; the remaining 95 points require implementation. Add your tests in a separate test file; do not edit the supplied acceptance tests, rubric, grading script, or workflow.
+Windows PowerShell: `py -m venv .venv`, then `.venv\Scripts\Activate.ps1`. If activation is restricted, use `.venv\Scripts\python.exe` or `.venv/bin/python` directly. Do not commit `.venv`.
 
-| Category | Points |
+The untouched starter scores **5/60** for supplied controlled-history infrastructure; its eleven failed adaptation checks are expected. `NotImplementedError` marks unfinished work. `python -m calculator` runs the supplied loop, though new requests will not work until you implement them. The supplied grader reports only the automated **60-point** portion of the assessment.
+
+## What is supplied and what you change
+
+Supplied and working: arithmetic/unary/statistical operations, numeric conversion, `Calculation`, factory selection logic, `History`, the command base class, calculate/history/clear/help commands, CSV reading, parser and interactive loop, pytest setup, and feedback infrastructure.
+
+Your changes are limited to these adaptations:
+
+1. Implement static `Operations.adjust` and `Operations.span`.
+2. Extend the factory registries for their operand and option policies.
+3. Implement `LastCommand.execute()` using saved history.
+4. Connect `last` and `csv span PATH` through the supplied parser.
+5. Repair the clearly marked ordering bug in `CalculatorSession.calculate`.
+6. Add your own tests and a short request trace/design explanation.
+
+There is no requirement to implement an additional design pattern, rebuild parsing, add persistent storage, or change statistical policy. You may refactor within `calculator/` if the published contracts continue to work. Keep the supplied acceptance tests, rubric, grader, and workflow unchanged.
+
+## New required behavior
+
+| Request/API | Contract |
+| --- | --- |
+| `adjust VALUE [offset=N] [scale=N]` | Exactly one value. Compute `(value + offset) * scale`; defaults: `offset=0`, `scale=1`. Order matters: add before multiplying. |
+| `Operations.adjust(value, *, offset=0, scale=1)` | Static method. Both settings are keyword-only. Negative and zero offsets/scales are valid. |
+| `span VALUES` / `Operations.span(*values)` | Static method accepting two or more readings. Return `max(values) - min(values)`; duplicates and negative numbers are valid. Reject fewer than two values with `ValueError`. |
+| `CalculationFactory.create("adjust", *values, **options)` | Select `Operations.adjust`, enforce exactly one operand, permit only `offset` and `scale`, convert supplied numeric options to finite floats. Return an unexecuted `Calculation`. |
+| `CalculationFactory.create("span", *values, **options)` | Select `Operations.span`, accept variable operands, reject all named options. The operation checks its minimum observation count when executed. |
+| `last` / `LastCommand(session).execute()` | Return the most recent saved successful request and result, in the same format as the final line of `history`. Return `History is empty.` when there are no entries. Never execute a calculation again. |
+| `csv span PATH` | Read the supplied `value` column and use the same factory/calculation/span operation as typed values. |
+| `CalculatorSession.calculate(calculation)` | Execute once; only after success, record `(calculation, actual_result)` and return that result. A failed calculation adds nothing. |
+
+The factory strips surrounding whitespace and normalizes operation names to lowercase. Existing conversion rejects nonnumeric/nonfinite operands and options; `Calculation.get_result()` rejects a nonfinite result. Do not duplicate that policy inside every operation. Construction must not perform arithmetic: an insufficient `span` request can be constructed but raises its domain error when executed.
+
+Parser settings use `key=value`; duplicate names are invalid. New CLI actions follow the existing rule: `last` accepts no arguments. CSV is supported for `mean`, `stddev`, and now `span`; `adjust` remains a typed, single-value operation. Paths with spaces are outside this grammar.
+
+Successful calculations are displayed as `Result: ` followed by four decimal places. Expected failures are displayed as `Error: ...` and permit another request. Exact error wording is flexible. `exit`, EOF, and Ctrl+C print `Goodbye!`. Missing, malformed, headerless, empty, or nonnumeric CSV data follows the supplied error/conversion policy; no observations are silently dropped.
+
+## Preserve controlled history
+
+`History` owns a private `_entries` list. Its supplied API is `add(calculation, result)`, `get_history()` (a **shallow list copy**), and `clear()`. `CalculatorSession` owns `_history = History()`, exposes `get_history()` and `clear()`, and has no public mutable `history` list. Clearing a returned list must not clear the session. This protects the collection; it does not deep-copy each calculation.
+
+`HistoryCommand` already formats saved entries through the supplied `_format_entry(calculation, result)` helper. You may reuse that helper for `LastCommand`. Calculations must not be rerun merely to display history. Repair the marked session defect rather than hiding it in a display command.
+
+## Example and deliberate failure
+
+```text
+> adjust 3 offset=2 scale=4
+Result: 20.0000
+> span -4 3 8
+Result: 12.0000
+> span 1
+Error: Enter at least two values.
+> last
+span -4.0 3.0 8.0 = 12.0000
+> clear
+History cleared.
+> last
+History is empty.
+> exit
+Goodbye!
+```
+
+The supplied `values.csv` contains 10, 20, 30, 40, 50, so `csv span values.csv` displays `Result: 40.0000`. Checks use other inputs; hardcoded examples do not satisfy the contract. Options in a saved request may appear in either order, but both names and saved values must be visible.
+
+## Assessment and feedback
+
+| Evidence | Points |
 | --- | ---: |
-| Manual calculation | 20 |
-| CSV input | 20 |
-| Command architecture | 20 |
-| Simple Factory | 20 |
-| Validation and CLI | 20 |
+| Twelve published automated behavior checks, 5 points each | 60 |
+| Your tests with justified cases | 20 |
+| Request traces and design explanations | 20 |
+| Total, including instructor review | 100 |
 
-Commit and push to your fork. If Actions is disabled, open its Actions tab and enable workflows, then push a new commit or manually run the workflow. Open **Actions → Practice feedback → latest run** for the score summary and download calculator-feedback for the JSON and summary. A green check means the supplied automated rubric reached 100, not that an instructor has completed design review.
+`python grading/grade.py` creates `grade-results.json` and `grade-summary.md`, reports **out of 60**, and exits 1 until every automated check passes. It does not award the manual 40 points. Actions → Practice feedback provides the same portion of feedback and downloadable `practice-feedback-60-points`; fork-owned results are feedback, not official grading or integrity review. The [manual rubric](MANUAL_REVIEW.md) and [alignment map](docs/alignment.md) publish the remaining expectations.
 
-## Submission
+Add your tests in `tests/test_student_*.py`, without editing the acceptance tests. Include `REFLECTION.md` with:
+
+- A trace of `adjust 3 offset=2 scale=4` from input to saved history, identifying values/types, construction versus execution, and returned display text.
+- A trace of a one-value `span` failure followed by `last`, including the point of exception propagation and why history remains unchanged.
+- An explanation of the static-operation/instance-command distinction, `*args`/`**kwargs`, factory versus command roles, and one deliberate EAFP/LBYL choice. Reason about correctness and expected failure; a CPU-versus-memory slogan earns no credit.
+- Brief explanations of the behavior your tests establish and why their cases are useful.
+
+Suggested timed allocation: 10 minutes inspect supplied flow; 20 operations/registries; 20 session repair/last; 15 CLI/CSV integration; 15 tests; 10 traces and submission. This is a target to pilot, not a measured completion guarantee.
 
 ```bash
-git add calculator tests README.md
-git commit -m "Implement statistics calculator"
+python -m pytest
+python grading/grade.py
+git add calculator tests REFLECTION.md
+git commit -m "Adapt calculator for measurement calibration"
 git push origin main
 git rev-parse HEAD
 ```
 
-Submit your fork URL and final commit SHA through the course's normal submission channel before the announced deadline. The instructor grades that commit using their own unchanged tests; edits to a fork's grading files cannot raise the official score. Explain briefly in your README where Command and Simple Factory occur and why both commands share calculation logic. No 100% coverage threshold is required.
+Submit your fork URL and full commit SHA through the announced course channel. There is no exact coverage-percentage requirement.
 
-## Reference policy
+## Resource policy
 
-Work individually. Course notes and your own practice code are allowed; AI assistance and communication with others during the timed attempt are prohibited. This is the proposed default resource policy; the instructor must confirm or revise it before the timed attempt. Do not copy another student's implementation.
+Work individually. Course notes, the teaching repository, and your own prior calculator code are allowed; reuse understood components and identify reused sources in your reflection. AI assistance and communication with others during the timed attempt are prohibited. Do not use another student's work. The instructor may announce additional institutional rules before the attempt.
 
-## After your practice attempt
-
-Review the solution branch only after your timed attempt. Compare responsibilities and tests, then repeat from a clean starter without copying.
+Do not open the practice `solution` branch until your timed attempt is complete. Afterward, compare responsibilities, failure flow, and test choices, then explain one improvement you would make. A copied teaching implementation lacks these new behaviors; copying an assessment solution is not application of the ideas.

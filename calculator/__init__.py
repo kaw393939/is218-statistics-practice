@@ -1,1 +1,1 @@
-"""Statistics calculator teaching package."""
+"""Measurement-calibration practice: adapt supplied calculator components."""

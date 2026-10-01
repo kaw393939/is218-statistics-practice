@@ -1,47 +1,18 @@
 [
   {
-    "category": "Manual calculation",
-    "tests": [
-      "test_manual_known_values",
-      "test_manual_constant_values",
-      "test_manual_numeric_text",
-      "test_shared_calculation"
-    ]
+    "category": "New static operations and factory selection",
+    "tests": ["test_adjust_static_keyword_configuration", "test_span_static_variable_inputs", "test_factory_constructs_adjust"]
   },
   {
-    "category": "CSV input",
-    "tests": [
-      "test_csv_known_values",
-      "test_csv_uses_pandas",
-      "test_csv_fixed_default",
-      "test_csv_missing_column"
-    ]
+    "category": "Deferred execution and option policies",
+    "tests": ["test_factory_constructs_span_without_execution", "test_factory_rejects_bad_options", "test_last_command_contract_and_empty"]
   },
   {
-    "category": "Command architecture",
-    "tests": [
-      "test_abstract_command",
-      "test_concrete_commands",
-      "test_commands_share_policy",
-      "test_cli_uses_factory_and_execute"
-    ]
+    "category": "Saved results and controlled history",
+    "tests": ["test_last_displays_saved_request", "test_last_never_reexecutes", "test_history_exposes_safe_snapshot"]
   },
   {
-    "category": "Simple Factory",
-    "tests": [
-      "test_factory_manual",
-      "test_factory_csv_normalization",
-      "test_factory_unknown",
-      "test_factory_does_not_execute"
-    ]
-  },
-  {
-    "category": "Validation and CLI",
-    "tests": [
-      "test_invalid_values",
-      "test_invalid_csv",
-      "test_cli_session",
-      "test_cli_recovers_and_eof"
-    ]
+    "category": "State repair and input integration",
+    "tests": ["test_session_records_only_success", "test_cli_adaptations_and_recovery", "test_csv_span_reuses_calculation_flow"]
   }
 ]

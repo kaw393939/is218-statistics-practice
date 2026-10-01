@@ -13,13 +13,13 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: python -m pip install -r requirements.txt
-      - name: Run the 100-point rubric
+      - name: Run the 60-point automated rubric
         run: python grading/grade.py
-      - name: Save score and detailed feedback
+      - name: Save automated score and detailed feedback
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: calculator-feedback
+          name: practice-feedback-60-points
           path: |
             grade-results.json
             grade-summary.md
